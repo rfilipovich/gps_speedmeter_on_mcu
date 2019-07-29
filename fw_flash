@@ -1,0 +1,44 @@
+#!/bin/bash
+
+SCRIPT_PATH=`dirname $0`
+
+#clear
+
+if [ "$1" = "--clear" ] ; then
+
+	if [ "$2" = "--port" ] ; then
+
+	echo ""
+	echo "Clear via $3 ..."
+	echo ""
+	
+	make erase_flash ESPPORT=$3
+	exit 0
+	
+fi
+	
+	echo ""
+	echo "Clear chip ..."
+	echo ""
+	
+	make erase_flash
+	exit 0
+	
+fi
+
+if [ "$1" = "--port" ] ; then
+
+	echo ""
+	echo "Programming via $2 ..."
+	echo ""
+	
+	make -j4 flash ESPPORT=$2
+	exit 0
+	
+fi
+
+echo ""
+echo "Programming ..."
+echo ""
+
+make -j4 flash

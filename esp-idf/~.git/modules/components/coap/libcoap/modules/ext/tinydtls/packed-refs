@@ -1,0 +1,6 @@
+# pack-refs with: peeled fully-peeled 
+9a3496119688047b6d8b79826f13425397d92e10 refs/remotes/origin/develop
+084937d618ccc3a642a97e283e7d46a5440a7db7 refs/remotes/origin/dtls_identity
+7e1323095dc3fa2b6c175e12c6b19bdaa5dcd3ed refs/remotes/origin/fix_dlts_client
+8414f8ace98bab1f835b494c85e3a6d8144341c9 refs/remotes/origin/master
+9c51d136a137209b0fca0a2db05e1afea5186aa8 refs/remotes/origin/riot-support
