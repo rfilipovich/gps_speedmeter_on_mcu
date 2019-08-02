@@ -10,5 +10,7 @@ COMPONENT_ADD_INCLUDEDIRS := components/include
 EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/src
 EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/libs/u8g2
 EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/libs/minmea
+EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/libs/ArduinoNvs
+
 
 include $(IDF_PATH)/make/project.mk

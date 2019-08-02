@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**************** PINS ****************/
 
@@ -22,5 +25,10 @@
 uint32_t hw_board_init(void);
 
 int32_t hw_board_sleep(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // HW_BOARD_H

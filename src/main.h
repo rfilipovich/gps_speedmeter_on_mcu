@@ -1,4 +1,14 @@
-#ifndef HB_CORE_MODULE_H
-#define HB_CORE_MODULE_H
+#ifndef MAIN_H
+#define MAIN_H
 
-#endif // HB_CORE_MODULE_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void app_main(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // MAIN_H
