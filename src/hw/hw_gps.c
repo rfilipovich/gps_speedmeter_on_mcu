@@ -11,6 +11,10 @@
 
 static char tag[] = "gps";
 
+/* only for debug on table */
+//#define DBG_GENERATE_GPS_DATA
+
+
 #define GPS_RX_PIN (34)
 #define GPS_UART_NUM (UART_NUM_1)
 
@@ -23,55 +27,100 @@ static QueueHandle_t uart_queue = NULL;
 /////////////////////////////////////////////////////
 //checking time for 1 houndred km/h
 
-volatile uint32_t for_one_handred_ms = 0;
+#define MAX_TRIGGERS (4)
+
+volatile uint32_t trigger_0_ms = 0;
+volatile uint32_t trigger_1_ms = 0;
+volatile uint32_t trigger_2_ms = 0;
+volatile uint32_t trigger_3_ms = 0;
+
+static struct _trig_lim_str_t {
+	TickType_t  sys_ticks;
+	uint32_t    trigged_ms;
+	int         status;
+} _trig_lim_str[MAX_TRIGGERS] = {
+#if MAX_TRIGGERS >= 1
+		{0, 0, 0},
+#endif
+#if MAX_TRIGGERS >= 2
+		{0, 0, 0},
+#endif
+#if MAX_TRIGGERS >= 3
+		{0, 0, 0},
+#endif
+#if MAX_TRIGGERS >= 4
+		{0, 0, 0},
+#endif
+};
 
 
-static void __to_one_hundred(
-		volatile uint32_t* const output_ms,
+static void _trig_one_limit(
+		struct _trig_lim_str_t *const str,
 		const uint32_t current_speed,
 		const uint16_t trig_speed,
 		const bool __clear) {
-	static TickType_t count = 0;
-	static int for_one_handred_status = 0;
 
-	if(__clear) {
-		count = 0;
-		for_one_handred_ms = 0;
-		for_one_handred_status = 0;
-		return;
+	if(__clear || (0 == current_speed)) {
+		str->sys_ticks = 0;
+		str->status = 0;
+
+		if(__clear) {
+			str->trigged_ms = 0;
+			return;
+		}
 	};
 
-	switch(for_one_handred_status) {
-		case 0: { /* wait zero */
+	switch(str->status) {
+		case 0: {
 			if(current_speed == 0) {
-				for_one_handred_ms = 0;
-				count = 0;
-				for_one_handred_status = 1;
+				str->status = 1;
 			}
 			break;
 		};
 
 		case 1: {
 			if(current_speed > 0) {
-				count = xTaskGetTickCount();
-				for_one_handred_status = 2;
+				str->trigged_ms = 0; /* clear last speed */
+				str->sys_ticks = xTaskGetTickCount();
+				str->status = 2;
 			}
 			break;
 		};
 
 		case 2: {
 			if(current_speed >= trig_speed) {
-				*output_ms = (xTaskGetTickCount() - count) * portTICK_PERIOD_MS;
-				for_one_handred_status = 0;
+				str->trigged_ms = (xTaskGetTickCount() - str->sys_ticks) * portTICK_PERIOD_MS;
+				str->status = 0;
 			};
 			break;
 		};
 
 		default: {
-			for_one_handred_status = 0;
+			str->status = 0;
 			break;
 		};
 	}
+}
+
+static void _check_and_apply_trigers(const uint32_t current_speed_mul_thousen, const bool __clear)
+{
+	const uint32_t speed_km_h = (current_speed_mul_thousen / 1000);
+
+	/* for 40 km/h */
+	_trig_one_limit(&_trig_lim_str[0], speed_km_h, 40, __clear);
+	trigger_0_ms = _trig_lim_str[0].trigged_ms;
+
+	/* for 60 km/h */
+	_trig_one_limit(&_trig_lim_str[1], speed_km_h, 60, __clear);
+	trigger_1_ms = _trig_lim_str[1].trigged_ms;
+
+	/* for 80 km/h */
+	_trig_one_limit(&_trig_lim_str[2], speed_km_h, 80, __clear);
+	trigger_2_ms = _trig_lim_str[2].trigged_ms;
+
+	/* for 100 km/h */
+	_trig_one_limit(&_trig_lim_str[3], speed_km_h, 100, __clear);
+	trigger_3_ms = _trig_lim_str[3].trigged_ms;
 }
 
 /////////////////////////////////////////////////////
@@ -151,7 +200,7 @@ static void task_gps(void *ignore)   {
 
 								  if (minmea_parse_rmc(&frame, line)) {
 									  gps_valid = frame.valid;
-#if 1
+#if !defined(DBG_GENERATE_GPS_DATA)
 									  if(frame.valid) {
 										  ext_speed = minmea_rescale(&frame.speed, 1000);
 	
@@ -164,13 +213,13 @@ static void task_gps(void *ignore)   {
 #else
 									  ///DBG///
 									  ext_speed += 10*1000;
-									  if(ext_speed > 120*1000) {
+									  if(ext_speed > 150*1000) {
 										  ext_speed = 0;
 									  }
 
 									  gps_valid = true;
 #endif
-									  __to_one_hundred(&for_one_handred_ms, ext_speed/1000, 60, !gps_valid);
+									  _check_and_apply_trigers(ext_speed, !gps_valid);
 
 								  };/* else {
 									  ESP_LOGD(tag, "$xxRMC sentence is not parsed\n");
